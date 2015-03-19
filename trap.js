@@ -1,5 +1,5 @@
 /**
- * trap.js by sstauffer@oncochart.com
+ * trap.js by scstauf@gmail.com
  */
 
 if (typeof jQuery != 'undefined') {
