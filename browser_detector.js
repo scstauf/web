@@ -17,6 +17,8 @@ function getBrowserName() {
 		browserName = 'chrome';
 	else
 		browserName = 'safari';
+	
+	return browserName;
 }
 
 // a1f6ed979ad81d7b3ed45a5d64bd2c6f
