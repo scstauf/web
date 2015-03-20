@@ -7,7 +7,7 @@
 function getBrowserName() {
 	var browserName = '';
 	
-	if (typeof isIE4 != 'undefined')
+	if (typeof window.clipboardData != 'undefined')
 		browserName = 'ie';
 	else if (typeof MozPowerManager != 'undefined')
 		browserName = 'moz';
