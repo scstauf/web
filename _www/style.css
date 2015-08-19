@@ -1,0 +1,51 @@
+html, body {
+    font-family: courier new;
+    font-size: .85em;
+	background-color: #333333;
+	color: #00ccff;
+}
+
+.main-menu-item {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: normal;
+}
+
+#about-me {
+    position: fixed;
+    float: left;
+    margin-right: 5px;
+    margin-top: 5px;
+    width: 150px;
+    height: 175px;
+    text-align: center;
+}
+
+#info-stream {
+    position: absolute;
+    float: right;
+	top: 0px;
+    margin-left: 160px;
+    margin-right: 10px;
+    text-align: center;
+}
+
+#code-snippet {
+	float: left;
+	padding-left: 10px;
+	text-align: left;
+}
+
+.profile-name {
+    line-height: 25px;
+}
+
+.profile-pic {
+    width: 150px;
+    height: 150px;
+}
+
+a {
+	text-decoration: none;
+	color: inherit;
+}

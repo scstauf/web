@@ -1,0 +1,67 @@
+<html>
+    <head>
+		<link rel="stylesheet" href="./style.css">
+		<script type="text/javascript">
+			function htmlEncode(str) {
+				return String(str)
+					.replace(/&/g, '&amp;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;')
+					.replace(/"/g, '&quot;');
+			}
+			
+			function loadFile(file) {			
+				document.getElementById('code-snippet').innerHTML = '';
+				var xhr = new XMLHttpRequest();
+				xhr.open('GET', file, true);
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState != 4 || xhr.status != 200) return;
+					document
+						.getElementById('code-snippet')
+						.innerHTML = '<pre>' + htmlEncode(xhr.responseText) + '</pre>';
+				};
+				xhr.send();
+			}
+			
+			document.addEventListener('DOMContentLoaded', function() {
+				var links = document.getElementsByTagName('a');
+				for (var i = 0; i < links.length; i++) {
+					links[i].addEventListener('click', function() {
+						var file = this.getAttribute('file');
+						loadFile(file);
+					});
+				}				
+			});
+		</script>
+    </head>
+    <body>
+        <div id="main-content-container">
+            <div id="about-me">
+                <img class="profile-pic" src="./images/me.jpg" />
+                <span class="profile-name">scottyeatscode</span>
+				<!-- ideally, this would be generated server-side, but I'm just having some client-side fun. -->
+				<div style="text-align: left; border-top: 1px solid #e666c7; border-bottom: 1px solid #e666c7;">
+					<a file="src/main.cpp" href="#">/main.cpp</a>
+					<a file="src/include/core.h" href="#">/include/core.h</a>
+					<a file="src/include/datetime.h" href="#">/include/datetime.h</a>
+					<a file="src/include/environment.h" href="#">/include/environment.h</a>
+					<a file="src/include/errors.h" href="#">/include/errors.h</a>
+					<a file="src/include/fileio.h" href="#">/include/fileio.h</a>
+					<a file="src/include/objects.h" href="#">/include/objects.h</a>
+					<a file="src/include/parser.h" href="#">/include/parser.h</a>
+					<a file="src/include/prototypes.h" href="#">/include/prototypes.h</a>
+					<a file="src/include/strings.h" href="#">/include/strings.h</a>
+				</div>
+				<a file="index.html" href="#">this file</a>
+            </div>
+            <div id="info-stream">
+                <p>
+					<div id="code-snippet">
+						<pre>
+						</pre>
+					</div>
+                </p>
+            </div>
+        </div>
+    </body>
+</html>
