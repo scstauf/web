@@ -81,6 +81,17 @@
 						println(err.message);
 					}
 				}
+				
+				document.getElementById('eval-is-evil').addEventListener('keydown', function(e) {
+					if (e.keyCode == 9) {
+						this.value += '\t';
+						
+						if (e.preventDefault)
+							e.preventDefault();
+							
+						return false;
+					}
+				});
 			}
 		
 			document.addEventListener('DOMContentLoaded', ready);
