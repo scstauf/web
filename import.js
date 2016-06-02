@@ -5,13 +5,13 @@
  
     usage:
     
-        ImportJS.importScriptBundle(scriptPaths[, callback]);
+        ImportJS.importScriptBundle(scriptPaths[, success, failure]);
 
-        ImportJS.importScript(scriptPath[, callback]);
+        ImportJS.importScript(scriptPath[, success, failure]);
  
     examples:
  
-        // import multiple scripts at once, callback is optional
+        // import multiple scripts at once, success and failure callbacks are optional
         ImportJS.importScriptBundle(
             [
                 '/js/jquery.min.js', 
@@ -22,45 +22,50 @@
             }
         );
 
-        // import a single script, callback is optional
+        // import a single script, success and failure callbacks are optional
         ImportJS.importScript('/js/jquery.min.js');
  */
 
 var ImportJS = {
-    importScript: function (scriptPath, callback) {
-        if (typeof scriptPath !== 'string' || scriptPath.length === 0 || !scriptPath.endsWith('.js')) {
-            throw 'ImportJS could not import invalid script: ' + scriptPath;
-        }
-
+    importScript: function (scriptPath, success, failure) {
         try {
+            if (typeof scriptPath !== 'string' || scriptPath.length === 0 || !scriptPath.endsWith('.js')) {
+                throw 'ImportJS could not import invalid script: ' + scriptPath;
+            }
+
             var script = document.createElement('script');
             script.src = scriptPath;
             script.type = 'text/javascript';
 
-            if (callback && typeof callback === 'function') {
-                script.onreadystatechange = callback;
-                script.onload = callback;
+            if (success && typeof success === 'function') {
+                script.onreadystatechange = success;
+                script.onload = success;
             }
 
             document.head.appendChild(script);
         }
-        catch (err) {
-            console.error(
-                'ImportJS could not import script: ' + scriptPath +
-                '\r\nError: ' + err.message +
-                '\r\nStack: ' + err.stack
-            );
+        catch (e) {
+            if (failure && typeof failure === 'function') {
+                failure(e);
+            }
 
-            throw err;
+            throw e;
         }
     },
-    importScriptBundle: function (scriptPaths, callback) {
-        if (typeof scriptPaths !== 'object' || !Array.isArray(scriptPaths)) {
-            throw 'ImportJS could not import invalid script bundle.';
+    importScriptBundle: function (scriptPaths, success, failure) {
+        try {
+            if (typeof scriptPaths !== 'object' || !Array.isArray(scriptPaths)) {
+                throw 'ImportJS could not import invalid script bundle.';
+            }
+
+            for (var i = 0; i < scriptPaths.length; i++) {
+                this.importScript(scriptPaths[i], (i === scriptPaths.length - 1 ? success : null));
+            }
         }
-        
-        for (var i = 0; i < scriptPaths.length; i++) {
-            this.importScript(scriptPaths[i], (i === scriptPaths.length - 1 ? callback : null));
+        catch (e) {
+            if (failure && typeof failure === 'function') {
+                failure(e);
+            }
         }
     }
 };
