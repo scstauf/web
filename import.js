@@ -28,7 +28,7 @@
 
 var ImportJS = {
     importScript: function (scriptPath, callback) {
-        if (typeof scriptPath !== 'string' || scriptPath.length === 0 || scriptPath.indexOf('.js') === -1) {
+        if (typeof scriptPath !== 'string' || scriptPath.length === 0 || !scriptPath.endsWith('.js')) {
             throw 'ImportJS could not import invalid script: ' + scriptPath;
         }
 
