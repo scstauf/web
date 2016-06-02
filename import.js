@@ -24,6 +24,11 @@
 
         // import a single script, success and failure callbacks are optional
         ImportJS.importScript('/js/jquery.min.js');
+        
+        // failure function contains exception message
+        ImportJS.importScript('/js/not.a.javascript.file', null, function(e) {
+            console.log('An error occurred: ' + e);
+        });
  */
 
 var ImportJS = {
