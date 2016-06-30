@@ -15,6 +15,9 @@ namespace LWO_Dev.Helpers
 
         public static T GetValue<T>(DataRow row, string columnName)
         {
+            if (row == null)
+                return default(T);
+            
             if (!row.Table.Columns.Contains(columnName))
                 return default(T);
 
@@ -26,6 +29,9 @@ namespace LWO_Dev.Helpers
 
         public static T GetValue<T>(DataRow row, string columnName, T defaultValue)
         {
+            if (row == null)
+                return defaultValue;
+            
             if (!row.Table.Columns.Contains(columnName))
                 return defaultValue;
 
@@ -135,6 +141,35 @@ namespace LWO_Dev.Helpers
             return param;
         }
 
+        /// <summary>
+        /// Builds a nullable generic SqlParameter for adding to a SqlParameter collection
+        /// Can only work with value types.
+        /// </summary>
+        /// <typeparam name="T">Specify the datatype to create</typeparam>
+        /// <param name="parameterName">Specify the parameter name</param>
+        /// <param name="dbType">Specify the SqlDbType</param>
+        /// <param name="value">Specify the generic value</param>
+        /// <returns>Returns a SqlParameter that can contain DBNull.Value</returns>
+        public SqlParameter BuildNullableParam<T>(string parameterName, SqlDbType dbType, T? value)
+            where T: struct
+        {
+            SqlParameter sqlParameter = new SqlParameter();
+
+            sqlParameter.ParameterName = parameterName;
+            sqlParameter.SqlDbType = dbType;
+
+            if (value.HasValue)
+            {
+                sqlParameter.Value = value.Value;
+            }
+            else
+            {
+                sqlParameter.Value = DBNull.Value;
+            }
+
+            return sqlParameter;
+        }
+        
         /// <summary>
         /// A generic OUTPUT SqlParameter factory
         /// </summary>
