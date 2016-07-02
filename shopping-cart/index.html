@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+    <head>
+        <script type="text/javascript" src="js/cookies.js"></script>
+        <script type="text/javascript" src="js/cart.js"></script>
+        
+        <script type="text/javascript">
+            var _sc = ShoppingCart;
+            
+            function test() {
+                // check if there is anything in the cart
+                if (_sc.canRestore()) {
+                    // restore the cart whenever
+                    _sc.restore();
+                }
+                
+                // adding four mock products
+                _sc.add('UPC', 'Mock Product A', 3, 4.51);
+                _sc.add('EAN', 'Mock Product B', 2, 13);
+                _sc.add('ISBN', 'Mock Product C', 8, 15.17);
+                _sc.add('ASIN', 'Mock Product D', 7, 24.25);
+                
+                // you cannot add the same product twice
+                _sc.add('UPC', '', 0, 0);
+                
+                // but you can update the product quantity
+                _sc.update('UPC', 3);
+                
+                // updating a quantity to 0 will delete the product
+                _sc.update('EAN', 0);
+                
+                // you can also delete a product by id
+                _sc.delete('ISBN');
+                
+                // changes are saved along the way (internally) using
+                _sc.store();
+                
+                // everything is stored in
+                console.log({
+                    cookie: _sc.cookie,
+                    value: Cookies.get(_sc.cookie),
+                    items: _sc.items
+                });
+                
+                // and when finished
+                _sc.clear();
+            }
+            
+            document.addEventListener('DOMContentLoaded', test);
+        </script>
+    </head>
+</html>
