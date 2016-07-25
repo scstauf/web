@@ -111,8 +111,7 @@ namespace LWO_Dev.Helpers
         /// <returns>A new SqlParameter</returns>
         public static SqlParameter BuildParam<T>(string parameterName, SqlDbType dbType, T value)
         {
-            var param = new SqlParameter(parameterName, dbType) { Value = (T)value };
-            return param;
+            return new SqlParameter(parameterName, dbType) { Value = (T)value };
         }
 
         /// <summary>
@@ -127,21 +126,18 @@ namespace LWO_Dev.Helpers
         public SqlParameter BuildNullableParam<T>(string parameterName, SqlDbType dbType, T? value)
             where T: struct
         {
-            SqlParameter sqlParameter = new SqlParameter();
-
-            sqlParameter.ParameterName = parameterName;
-            sqlParameter.SqlDbType = dbType;
-
+            var param = new SqlParameter
+            {
+                ParameterName = parameterName,
+                SqlDbType = dbType
+            };
+            
             if (value.HasValue)
-            {
-                sqlParameter.Value = value.Value;
-            }
+                param.Value = value.Value;
             else
-            {
-                sqlParameter.Value = DBNull.Value;
-            }
+                param.Value = DBNull.Value;
 
-            return sqlParameter;
+            return param;
         }
         
         /// <summary>
