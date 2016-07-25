@@ -15,34 +15,6 @@ namespace LWO_Dev.Helpers
     {
         #region Data Conversion
 
-        public static T GetValue<T>(DataRow row, string columnName)
-        {
-            if (row == null)
-                return default(T);
-            
-            if (!row.Table.Columns.Contains(columnName))
-                return default(T);
-
-            if (row.IsNull(columnName))
-                return default(T);
-
-            return (T)row[columnName];
-        }
-
-        public static T GetValue<T>(DataRow row, string columnName, T defaultValue)
-        {
-            if (row == null)
-                return defaultValue;
-            
-            if (!row.Table.Columns.Contains(columnName))
-                return defaultValue;
-
-            if (row.IsNull(columnName))
-                return defaultValue;
-
-            return (T)row[columnName];
-        }
-
         /// <summary>
         /// Extracts the base64 string from a DataUrl string
         /// </summary>
@@ -185,6 +157,48 @@ namespace LWO_Dev.Helpers
             var param = BuildParam<T>(parameterName, dbType, value);
             param.Direction = ParameterDirection.Output;
             return param;
+        }
+
+        public static bool IsDBNull(DataRow row, string columnName)
+        {
+            var isDbNull = true;
+
+            try
+            {
+                if (row != null)
+                    isDbNull = row.Table.Columns.Contains(columnName) && row.IsNull(columnName);
+            }
+            catch { }
+
+            return isDbNull;
+        }
+
+        public static T GetValue<T>(DataRow row, string columnName)
+        {
+            if (row == null)
+                return default(T);
+            
+            if (!row.Table.Columns.Contains(columnName))
+                return default(T);
+
+            if (row.IsNull(columnName))
+                return default(T);
+
+            return (T)row[columnName];
+        }
+
+        public static T GetValue<T>(DataRow row, string columnName, T defaultValue)
+        {
+            if (row == null)
+                return defaultValue;
+            
+            if (!row.Table.Columns.Contains(columnName))
+                return defaultValue;
+
+            if (row.IsNull(columnName))
+                return defaultValue;
+
+            return (T)row[columnName];
         }
 
         /// <summary>
