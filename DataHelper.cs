@@ -556,7 +556,7 @@ namespace LWO_Dev.Helpers
         {
             return await GetDataTableFromStoredProcedure(procName, (int) session["userID"], parameters);
         }
-		
+        
         /// <summary>
         /// Asynchronously returns a DataTable object containing the result set of a stored procedure
         /// </summary>
@@ -564,86 +564,86 @@ namespace LWO_Dev.Helpers
         /// <param name="userId">The userId of the current session</param>
         /// <param name="parameters">A list of parameters to pass to the stored procedure</param>
         /// <returns>A DataTable object containing the result set of a stored procedure</returns>
-		public async Task<DataTable> GetDataTableFromStoredProcedureAsync(string procName, int userId, List<SqlParameter> parameters = null)
-		{
-			SqlConnection conn = null;
-			DataTable dt = null;
+        public async Task<DataTable> GetDataTableFromStoredProcedureAsync(string procName, int userId, List<SqlParameter> parameters = null)
+        {
+            SqlConnection conn = null;
+            DataTable dt = null;
 
-			try 
-			{
-				conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Dbkey].ToString());
-				await conn.OpenAsync();
+            try 
+            {
+                conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Dbkey].ToString());
+                await conn.OpenAsync();
 
-				using (var cmd = new SqlCommand(procName, conn))
-				{
-					cmd.CommandType = CommandType.StoredProcedure;
-					if (parameters != null)
-						foreach (var param in parameters)
-							cmd.Parameters.Add(param);
+                using (var cmd = new SqlCommand(procName, conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    if (parameters != null)
+                        foreach (var param in parameters)
+                            cmd.Parameters.Add(param);
 
-					var reader = await cmd.ExecuteReaderAsync();
-					dt = new DataTable();
+                    var reader = await cmd.ExecuteReaderAsync();
+                    dt = new DataTable();
 
-					_GetColumns(ref dt, reader);
-					_GetRows(dt, reader);
-				}
-			}
-			catch (Exception ex) 
-			{
-				ErrorHelper.Log(ex, userId);
-			}
-			finally 
-			{
-				conn?.Close();
-			}
+                    _GetColumns(ref dt, reader);
+                    _GetRows(dt, reader);
+                }
+            }
+            catch (Exception ex) 
+            {
+                ErrorHelper.Log(ex, userId);
+            }
+            finally 
+            {
+                conn?.Close();
+            }
 
-			return dt;
-		}
+            return dt;
+        }
         
-		private void _GetColumns(ref DataTable table, SqlDataReader reader)
-		{
-			try
-			{
-				if (!reader.IsClosed)
-				{
-					var columns = new List<DataColumn>();
+        private void _GetColumns(ref DataTable table, SqlDataReader reader)
+        {
+            try
+            {
+                if (!reader.IsClosed)
+                {
+                    var columns = new List<DataColumn>();
 
-					for (var i = 0; i < reader.FieldCount; i++)
-						columns.Add(
-							new DataColumn(
-								reader.GetName(i),
-								reader.GetFieldType(i)
-							)
-						);
+                    for (var i = 0; i < reader.FieldCount; i++)
+                        columns.Add(
+                            new DataColumn(
+                                reader.GetName(i),
+                                reader.GetFieldType(i)
+                            )
+                        );
 
-					table.Columns.AddRange(columns.ToArray());
-				}
-			}
-			catch {}
-		}
+                    table.Columns.AddRange(columns.ToArray());
+                }
+            }
+            catch {}
+        }
 
-		private async void _GetRows(DataTable table, SqlDataReader reader)
-		{
-			try
-			{
-				if (!reader.IsClosed)
-				{
-					while (await reader.ReadAsync())
-					{
-						var values = new List<object>();
+        private async void _GetRows(DataTable table, SqlDataReader reader)
+        {
+            try
+            {
+                if (!reader.IsClosed)
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var values = new List<object>();
 
-						for (var i = 0; i < reader.FieldCount; i++)
-						{
-							var value = reader[i];
-							values.Add(value);
-						}
+                        for (var i = 0; i < reader.FieldCount; i++)
+                        {
+                            var value = reader[i];
+                            values.Add(value);
+                        }
 
-						table.Rows.Add(values.ToArray());
-					}
-				}
-			}
-			catch {}
-		}
+                        table.Rows.Add(values.ToArray());
+                    }
+                }
+            }
+            catch {}
+        }
 
         #endregion
     }
