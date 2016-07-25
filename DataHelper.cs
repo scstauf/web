@@ -591,11 +591,11 @@ namespace LWO_Dev.Helpers
                         foreach (var param in parameters)
                             cmd.Parameters.Add(param);
 
-                    var reader = await cmd.ExecuteReaderAsync();
                     dt = new DataTable();
-
-                    _GetColumns(ref dt, reader);
-                    _GetRows(dt, reader);
+                    dt.Load(await cmd.ExecuteReaderAsync());
+                    
+                    //_GetColumns(ref dt, reader);
+                    //_GetRows(dt, reader);
                 }
             }
             catch (Exception ex) 
@@ -610,7 +610,7 @@ namespace LWO_Dev.Helpers
             return dt;
         }
         
-        private void _GetColumns(ref DataTable table, SqlDataReader reader)
+        /*private void _GetColumns(ref DataTable table, SqlDataReader reader)
         {
             try
             {
@@ -653,7 +653,7 @@ namespace LWO_Dev.Helpers
                 }
             }
             catch {}
-        }
+        }*/
 
         #endregion
     }
