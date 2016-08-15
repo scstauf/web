@@ -69,7 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		for (var i = 0; i < embed.length; i++) {
 			if (embed[i].hasAttribute('flashvars')) {
 				var flashvars = embed[i].getAttribute('flashvars');
-				
 				if (flashvars.length > 0 && flashvars.indexOf('&') > -1) {
 					videoData = JSON.parse(
 						decodeURIComponent(
@@ -77,16 +76,11 @@ document.addEventListener('DOMContentLoaded', function() {
 						)
 					)
 					.video_data
-					.progressive[0];
-					
-					sdSrc = videoData.sd_src;
-					hdSrc = videoData.hd_src;
-						
-					if (hdSrc) {
-						console.log(hdSrc);
-					}
-					else if (sdSrc) {
-						console.log(sdSrc);
+					.progressive;
+
+					if (videoData) {
+						sdSrc = videoData.sd_src;
+						hdSrc = videoData.hd_src;
 					}
 				}
 			}
