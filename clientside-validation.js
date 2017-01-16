@@ -17,124 +17,121 @@
 	<span v-target="phoneNum" v-label></span>
 
  */
+ 
+var VForms = {
+	validate: function () {
+		var spans = $('*[v-label]'),
+			fields = $('*[v-msg]'),
+			name = '',
+			field = '',
+			validationMessage = '',
+			fieldValue = '',
+			scrollTo = null,
+			passed = true;
+			
+		var minLength = 0,
+			isEmailAddress = false,
+			isPhoneNumber = false,
+			isNumeric = false,
+			isInvalid = false;
 
-function isValidEmailAddress(emailAddress) {
-    if (emailAddress.trim().length === 0) {
-        return false;
-    }
+		for (var i = 0; i < spans.length; i++) {
+			name = $(spans[i]).attr('v-target');
+			field = $(fields).filter('[name="'+ name + '"]');
+			fieldValue = $(field).val();
+			validationMessage = $(field).attr('v-msg');
 
-    var atSymbols = 0, periods = 0, i = 0, len = emailAddress.length;
+			minLength = $(field).attr('minlength');
+			isEmailAddress = $(field).attr('isemailaddress');
+			isPhoneNumber = $(field).attr('isphonenumber');
+			isNumeric = $(field).attr('isnumeric');
+			isInvalid = false;
 
-    if (emailAddress[len - 1] === '.') {
-        return false;
-    }
+			if (fieldValue.trim() === '') {
+				isInvalid = true;
+			}
+		
+			if (!isInvalid && minLength !== undefined) {
+				isInvalid = (fieldValue.length < minLength);
+			}
+			
+			if (!isInvalid && isEmailAddress !== undefined) {
+				isInvalid = !VForms.isValidEmailAddress(fieldValue);
+			}
+			
+			if (!isInvalid && isPhoneNumber !== undefined) {
+				isInvalid = !VForms.isValidPhoneNumber(fieldValue);
+			}
+			
+			if (!isInvalid && isNumeric !== undefined) {
+				isInvalid = isNaN(fieldValue);
+			}
 
-    for (i = 0; i < len; i++) {
-        switch (emailAddress[i]) {
-            case '@':
-                if (atSymbols > 1) {
-                    return false;
-                }
+			if (isInvalid) {
+				$(spans[i]).text(validationMessage);
+				passed = false;
 
-                atSymbols++;
-                break;
-
-            case '.':
-                if (atSymbols === 0) {
-                    return false;
-                }
-
-                periods++;
-                break;
-        }   
-    }
-
-    return atSymbols === 1 && periods > 0;
-}
-
-function isValidPhoneNumber(phoneNumber) {
-    var digits = 0;
-
-    for (var i = 0; i < phoneNumber.length; i++) {
-        if (!isNaN(phoneNumber[i]) && phoneNumber[i] !== ' ') {
-            digits++;
-        }
-    }
-
-    return digits >= 10;
-}
-
-function validate() {
-    /*
-    Scotty ate javascript for lunch today.
-    */
-
-    var spans = $('*[v-label]');
-    var fields = $('*[v-msg]');
-    var name = '',
-        field = '',
-        validationMessage = '',
-        fieldValue = '';
-
-    var scrollTo = null;
-
-    var passed = true;
-
-    for (var i = 0; i < spans.length; i++) {
-        name = $(spans[i]).attr('v-target');
-        field = $(fields).filter('[name="'+ name + '"]');
-        fieldValue = $(field).val();
-        validationMessage = $(field).attr('v-msg');
-
-        var minLength = $(field).attr('minlength');
-        var isEmailAddress = $(field).attr('isemailaddress');
-        var isPhoneNumber = $(field).attr('isphonenumber');
-        var isNumeric = $(field).attr('isnumeric');
-        var isInvalid = false;
-
-		if (fieldValue.trim() === '') {
-			isInvalid = true;
+				if (!scrollTo) {
+					scrollTo = field;
+				}
+			}
+			else {
+				$(spans[i]).text('');
+			}
 		}
-	
-        if (!isInvalid && minLength !== undefined) {
-            isInvalid = (fieldValue.length < minLength);
-        }
-		
-        if (!isInvalid && isEmailAddress !== undefined) {
-            isInvalid = !isValidEmailAddress(fieldValue);
-        }
-		
-        if (!isInvalid && isPhoneNumber !== undefined) {
-            isInvalid = !isValidPhoneNumber(fieldValue);
-        }
-		
-        if (!isInvalid && isNumeric !== undefined) {
-            isInvalid = isNaN(fieldValue);
-        }
 
-        if (isInvalid) {
-            $(spans[i]).text(validationMessage);
-            passed = false;
+		return passed;
+	},
+	// probably should use regex in the following functions
+	isValidEmailAddress: function (emailAddress) {
+		if (emailAddress.trim().length === 0) {
+			return false;
+		}
 
-            if (!scrollTo) {
-                scrollTo = field;
-            }
-        }
-        else {
-            $(spans[i]).text('');
-        }
-    }
+		var atSymbols = 0, periods = 0, i = 0, len = emailAddress.length;
 
-    if (!passed) {
-        $('html, body').animate({ scrollTop: $(scrollTo).offset().top - 70 }, 400);
-    }
+		if (emailAddress[len - 1] === '.') {
+			return false;
+		}
 
-    return passed;
-}
+		for (i = 0; i < len; i++) {
+			switch (emailAddress[i]) {
+				case '@':
+					if (atSymbols > 1) {
+						return false;
+					}
+
+					atSymbols++;
+					break;
+
+				case '.':
+					if (atSymbols === 0) {
+						return false;
+					}
+
+					periods++;
+					break;
+			}   
+		}
+
+		return atSymbols === 1 && periods > 0;
+	},
+	isValidPhoneNumber: function (phoneNumber) {
+		var digits = 0;
+
+		for (var i = 0; i < phoneNumber.length; i++) {
+			if (!isNaN(phoneNumber[i]) && phoneNumber[i] !== ' ') {
+				digits++;
+			}
+		}
+
+		return digits >= 10;
+	}
+};
 
 $(document).ready(function () {
     $('form').submit(function (e) {
-        if (!validate()) {
+        if (!VForms.validate()) {
             e.preventDefault();
         }
     });
