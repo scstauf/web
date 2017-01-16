@@ -1,660 +1,257 @@
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Data.SqlClient;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Web;
-using System.Web.Script.Serialization;
 
-namespace LWO_Dev.Helpers
+public class Sql
 {
-    public class DataHelper
+    private string connectionString = string.Empty;
+    private List<SqlParameter> _Params;
+    private const int SqlTimeout = 60000;
+
+    public Sql(string connectionString)
     {
-        #region Data Conversion
+        this.connectionString = connectionString;
+    }
 
-        /// <summary>
-        /// Extracts the base64 string from a DataUrl string
-        /// </summary>
-        /// <param name="dataUrl">The DataUrl string</param>
-        /// <returns>A base64 string containing the DataUrl content</returns>
-        public static string DataUrlToBase64(string dataUrl)
+    public List<SqlParameter> BuildParamList()
+    {
+        return new List<SqlParameter>();
+    }
+
+    public List<SqlParameter> Params
+    {
+        get
         {
-            return Regex.Match(dataUrl, @"data:image/(?<type>.+?),(?<data>.+)").Groups["data"].Value;
-        }
-
-        /// <summary>
-        /// Converts a DataUrl to a byte[]
-        /// </summary>
-        /// <param name="dataUrl">The DataUrl string</param>
-        /// <returns>byte[] containing the DataUrl content</returns>
-        public static byte[] DataUrlToBytes(string dataUrl)
-        {
-            return Convert.FromBase64String(DataUrlToBase64(dataUrl));
-        }
-
-        /// <summary>
-        /// Converts a DataTable object to a JSON string
-        /// </summary>
-        /// <param name="dt">The DataTable to convert</param>
-        /// <returns>A JSON string containing the data from a DataTable object</returns>
-        public static string DataTableToJson(DataTable dt)
-        {
-            var rows = new List<Dictionary<string, object>>();
-
-            foreach (DataRow dr in dt.Rows)
+            if (this._Params == null)
             {
-                var row = new Dictionary<string, object>();
-
-                foreach (DataColumn col in dt.Columns)
-                    row[col.ColumnName] = dr[col];
-
-                rows.Add(row);
+                this._Params = this.BuildParamList();
             }
 
-            return new JavaScriptSerializer().Serialize(rows);
+            return this._Params;
+        }
+    }
+
+    private void SwapParameters(List<SqlParameter> parameters = null) {            
+        if (sqlParameters == null && this.Params.Count > 0)
+            sqlParameters = this.Params;
+    }
+
+    /// <summary>
+    /// Builds a generic SqlParameter for adding to a SqlParameter collection
+    /// </summary>
+    /// <typeparam name="T">Specify the datatype to create</typeparam>
+    /// <param name="parameterName">Specify the parameter name</param>
+    /// <param name="dbType">Specify the SqlDbType</param>
+    /// <param name="value">Specify the generic value</param>
+    /// <returns>Returns a SqlParameter</returns>
+    public SqlParameter BuildParam<T>(string parameterName, SqlDbType dbType, T value)
+    {
+        SqlParameter sqlParameter = new SqlParameter();
+
+        sqlParameter.ParameterName = parameterName;
+        sqlParameter.SqlDbType = dbType;
+        sqlParameter.Value = value;
+
+        this.Params.Add(sqlParameter);
+
+        return sqlParameter;
+    }
+
+    /// <summary>
+    /// Builds a non-generic nullable SqlParameter for adding to a SqlParameter collection.
+    /// </summary>
+    /// <param name="parameterName">Specify the parameter name</param>
+    /// <param name="dbType">Specify the SqlDbType</param>
+    /// <param name="value">Specify the generic value</param>
+    /// <returns>Returns a SqlParameter that can contain DBNull.Value</returns>
+    public SqlParameter BuildNullableParam(string parameterName, SqlDbType dbType, string value)
+    {
+        var sqlParameter = new SqlParameter
+        {
+            ParameterName = parameterName,
+            SqlDbType = dbType
+        };
+
+        if (value == null)
+        {
+            sqlParameter.Value = DBNull.Value;
+        }
+        else
+        {
+            sqlParameter.Value = value;
         }
 
-        /// <summary>
-        /// Converts a DataSet object to a JSON string
-        /// </summary>
-        /// <param name="ds">The DataSet to convert</param>
-        /// <returns>A JSON string containing the data from a DataSet object</returns>
-        public static string DataSetToJson(DataSet ds)
+        this.Params.Add(sqlParameter);
+
+        return sqlParameter;
+    }
+
+    /// <summary>
+    /// Builds a nullable generic SqlParameter for adding to a SqlParameter collection
+    /// Can only work with value types.
+    /// </summary>
+    /// <typeparam name="T">Specify the datatype to create</typeparam>
+    /// <param name="parameterName">Specify the parameter name</param>
+    /// <param name="dbType">Specify the SqlDbType</param>
+    /// <param name="value">Specify the generic value</param>
+    /// <returns>Returns a SqlParameter that can contain DBNull.Value</returns>
+    public SqlParameter BuildNullableParam<T>(string parameterName, SqlDbType dbType, T? value)
+        where T: struct
+    {
+        SqlParameter sqlParameter = new SqlParameter();
+
+        sqlParameter.ParameterName = parameterName;
+        sqlParameter.SqlDbType = dbType;
+
+        if (value.HasValue)
         {
-            var tables = new Dictionary<string, List<Dictionary<string, object>>>();
+            sqlParameter.Value = value.Value;
+        }
+        else
+        {
+            sqlParameter.Value = DBNull.Value;
+        }
 
-            foreach (DataTable dt in ds.Tables)
+        this.Params.Add(sqlParameter);
+
+        return sqlParameter;
+    }
+
+    /// <summary>
+    /// Gets a DataSet from a stored procedure
+    /// </summary>
+    /// <param name="storedProc">The name of the stored procedure</param>
+    /// <param name="sqlParameters">A collection of SqlParameter</param>
+    /// <returns>Returns a DataSet from the stored procedure</returns>
+    public DataSet GetDataSetFromStoredProc(string storedProc, List<SqlParameter> sqlParameters = null)
+    {
+        SqlConnection conn = null;
+        DataSet ds = null;
+
+        try
+        {
+            SwapParameters(parameters);
+
+            conn = new SqlConnection(connectionString);
+            conn.Open();
+
+            using (var cmd = new SqlCommand(storedProc, conn))
             {
-                var rows = new List<Dictionary<string, object>>();
+                cmd.CommandTimeout = SqlTimeout;
+                cmd.CommandType = CommandType.StoredProcedure;
 
-                foreach (DataRow dr in dt.Rows)
+                if (sqlParameters != null)
+                    foreach (var param in sqlParameters)
+                        cmd.Parameters.Add(param);
+
+                using (var adapter = new SqlDataAdapter(cmd))
                 {
-                    var row = new Dictionary<string, object>();
-
-                    foreach (DataColumn col in dt.Columns)
-                        row[col.ColumnName] = dr[col];
-
-                    rows.Add(row);
-                }
-                
-                tables.Add(dt.TableName, rows);
-            }
-
-            return new JavaScriptSerializer().Serialize(tables);
-        }
-
-        #endregion
-
-        #region Data Access Layer
-
-        /// <summary>
-        /// The key to the connection string in the configuration file
-        /// </summary>
-        private const string Dbkey = "LWODBConnection";
-
-        /// <summary>
-        /// Returns an empty list for building SqlParameter objects
-        /// </summary>
-        /// <returns></returns>
-        public static List<SqlParameter> BuildSqlParamList() => new List<SqlParameter>();
-
-        /// <summary>
-        /// A generic SqlParameter factory
-        /// </summary>
-        /// <typeparam name="T">The datatype of the SqlParameter value</typeparam>
-        /// <param name="parameterName">The name of the SqlParameter</param>
-        /// <param name="dbType">The SqlDbType of the SqlParameter</param>
-        /// <param name="value">The value of the SqlParameter</param>
-        /// <returns>A new SqlParameter</returns>
-        public static SqlParameter BuildParam<T>(string parameterName, SqlDbType dbType, T value)
-        {
-            return new SqlParameter(parameterName, dbType) { Value = (T)value };
-        }
-
-        /// <summary>
-        /// Builds a nullable generic SqlParameter for adding to a SqlParameter collection
-        /// Can only work with value types.
-        /// </summary>
-        /// <typeparam name="T">Specify the datatype to create</typeparam>
-        /// <param name="parameterName">Specify the parameter name</param>
-        /// <param name="dbType">Specify the SqlDbType</param>
-        /// <param name="value">Specify the generic value</param>
-        /// <returns>Returns a SqlParameter that can contain DBNull.Value</returns>
-        public SqlParameter BuildNullableParam<T>(string parameterName, SqlDbType dbType, T? value)
-            where T: struct
-        {
-            var param = new SqlParameter
-            {
-                ParameterName = parameterName,
-                SqlDbType = dbType
-            };
-            
-            if (value.HasValue)
-                param.Value = value.Value;
-            else
-                param.Value = DBNull.Value;
-
-            return param;
-        }
-        
-        /// <summary>
-        /// A generic OUTPUT SqlParameter factory
-        /// </summary>
-        /// <typeparam name="T">The datatype of the SqlParameter value</typeparam>
-        /// <param name="parameterName">The name of the SqlParameter</param>
-        /// <param name="dbType">The SqlDbType of the SqlParameter</param>
-        /// <param name="value">The value of the SqlParameter</param>
-        /// <returns>A new OUTPUT SqlParameter</returns>
-        public static SqlParameter BuildOutputParam<T>(string parameterName, SqlDbType dbType, T value)
-        {
-            var param = BuildParam<T>(parameterName, dbType, value);
-            param.Direction = ParameterDirection.Output;
-            return param;
-        }
-
-        public static bool IsDBNull(DataRow row, string columnName)
-        {
-            var isDbNull = true;
-
-            try
-            {
-                if (row != null)
-                    isDbNull = row.Table.Columns.Contains(columnName) && row.IsNull(columnName);
-            }
-            catch { }
-
-            return isDbNull;
-        }
-
-        public static T GetValue<T>(DataRow row, string columnName)
-        {
-            if (row == null)
-                return default(T);
-            
-            if (!row.Table.Columns.Contains(columnName))
-                return default(T);
-
-            if (row.IsNull(columnName))
-                return default(T);
-
-            return (T)row[columnName];
-        }
-
-        public static T GetValue<T>(DataRow row, string columnName, T defaultValue)
-        {
-            if (row == null)
-                return defaultValue;
-            
-            if (!row.Table.Columns.Contains(columnName))
-                return defaultValue;
-
-            if (row.IsNull(columnName))
-                return defaultValue;
-
-            return (T)row[columnName];
-        }
-
-        /// <summary>
-        /// Returns a DataTable object containing the result set of a SQL query
-        /// </summary>
-        /// <param name="sql">SQL to execute</param>
-        /// <param name="session">The Session object of the current controller</param>
-        /// <param name="parameters">A list of parameters to pass to the SQL query</param>
-        /// <returns>A DataTable object containing the result set of a SQL query</returns>
-        public static DataTable GetDataTable(string sql, HttpSessionStateBase session, List<SqlParameter> parameters = null)
-        {
-            return GetDataTable(sql, (int) session["userID"], parameters);
-        }
-
-        /// <summary>
-        /// Returns a DataTable object containing the result set of a SQL query
-        /// </summary>
-        /// <param name="sql">SQL to execute</param>
-        /// <param name="userId">The userId of the current session</param>
-        /// <param name="parameters">A list of parameters to pass to the SQL query</param>
-        /// <returns>A DataTable object containing the result set of a SQL query</returns>
-        public static DataTable GetDataTable(string sql, int userId, List<SqlParameter> parameters = null)
-        {
-            SqlConnection conn = null;
-            DataTable dt = null;
-            try
-            {
-                conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Dbkey].ToString());
-                conn.Open();
-
-                using (var cmd = new SqlCommand(sql, conn))
-                {
-                    if (parameters != null)
-                        foreach (var param in parameters)
-                            cmd.Parameters.Add(param);
-                     
-
-                    using (var adapter = new SqlDataAdapter(cmd))
-                    {
-                        dt = new DataTable();
-                        adapter.Fill(dt);
-                    }
+                    ds = new DataSet();
+                    adapter.Fill(ds);
                 }
             }
-            catch (Exception ex)
-            {
-                ErrorHelper.Log(ex, userId);
-            }
-            finally
-            {
-                conn?.Close();
-            }
+        }
+        finally
+        {
+            if (conn != null)
+                conn.Close();
 
-            return dt;
+            this.Params.Clear();
         }
 
-        /// <summary>
-        /// Returns a DataTable object containing the result set of a stored procedure
-        /// </summary>
-        /// <param name="procName">The name of the stored procedure</param>
-        /// <param name="session">The Session object of the controller</param>
-        /// <param name="parameters">A list of parameters to pass to the stored procedure</param>
-        /// <returns>A DataTable object containing the result set of a stored procedure</returns>
-        public static DataTable GetDataTableFromStoredProcedure(string procName, HttpSessionStateBase session, List<SqlParameter> parameters = null)
-        {
-            return GetDataTableFromStoredProcedure(procName, (int) session["userID"], parameters);
-        }
+        return ds;
+    }
 
-        /// <summary>
-        /// Returns a DataTable object containing the result set of a stored procedure
-        /// </summary>
-        /// <param name="procName">The name of the stored procedure</param>
-        /// <param name="userId">The userId of the current session</param>
-        /// <param name="parameters">A list of parameters to pass to the stored procedure</param>
-        /// <returns>A DataTable object containing the result set of a stored procedure</returns>
-        public static DataTable GetDataTableFromStoredProcedure(string procName, int userId, List<SqlParameter> parameters = null)
+    /// <summary>
+    /// Gets a DataTable from a stored procedure
+    /// </summary>
+    /// <param name="storedProc">The name of the stored procedure</param>
+    /// <param name="sqlParameters">A collection of SqlParameter</param>
+    /// <returns>Returns a DataTable from the stored procedure</returns>
+    public DataTable GetDataTableFromStoredProc(string storedProc, List<SqlParameter> sqlParameters = null, int sqlTimeout = 120000)
+    {
+        SqlConnection conn = null;
+        DataTable dt = null;
+
+        try
         {
-            SqlConnection conn = null;
-            DataTable dt = null;
-            try
+            SwapParameters(parameters);
+
+            conn = new SqlConnection(connectionString);
+            conn.Open();
+
+            using (var cmd = new SqlCommand(storedProc, conn))
             {
-                conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Dbkey].ToString());
-                conn.Open();
+                cmd.CommandTimeout = sqlTimeout;
+                cmd.CommandType = CommandType.StoredProcedure;
 
-                using (var cmd = new SqlCommand(procName, conn))
+                if (sqlParameters != null)
+                    foreach (var param in sqlParameters)
+                        cmd.Parameters.Add(param);
+
+                using (var adapter = new SqlDataAdapter(cmd))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    if (parameters != null)
-                        foreach (var param in parameters)
-                            cmd.Parameters.Add(param);
-
-
-                    using (var adapter = new SqlDataAdapter(cmd))
-                    {
-                        dt = new DataTable();
-                        adapter.Fill(dt);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorHelper.Log(ex, userId);
-            }
-            finally
-            {
-                conn?.Close();
-            }
-
-            return dt;
-        }
-
-        /// <summary>
-        /// Returns a DataSet object containing the result set of a SQL query
-        /// </summary>
-        /// <param name="sql">SQL to execute</param>
-        /// <param name="session">The Session object of the current controller</param>
-        /// <param name="parameters">A list of parameters to pass to the SQL query</param>
-        /// <returns>A DataSet object containing the result set of a SQL query</returns>
-        public static DataSet GetDataSet(string sql, HttpSessionStateBase session, List<SqlParameter> parameters = null)
-        {
-            return GetDataSet(sql, (int)session["userID"], parameters);
-        }
-
-        /// <summary>
-        /// Returns a DataSet object containing the result set of a SQL query
-        /// </summary>
-        /// <param name="sql">SQL to execute</param>
-        /// <param name="userId">The userId of the current session</param>
-        /// <param name="parameters">A list of parameters to pass to the SQL query</param>
-        /// <returns>A DataSet object containing the result set of a SQL query</returns>
-        public static DataSet GetDataSet(string sql, int userId, List<SqlParameter> parameters = null)
-        {
-            SqlConnection conn = null;
-            DataSet ds = null;
-            try
-            {
-                conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Dbkey].ToString());
-                conn.Open();
-
-                using (var cmd = new SqlCommand(sql, conn))
-                {
-                    if (parameters != null)
-                        foreach (var param in parameters)
-                            cmd.Parameters.Add(param);
-
-
-                    using (var adapter = new SqlDataAdapter(cmd))
-                    {
-                        ds = new DataSet();
-                        adapter.Fill(ds);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorHelper.Log(ex, userId);
-            }
-            finally
-            {
-                conn?.Close();
-            }
-
-            return ds;
-        }
-
-        /// <summary>
-        /// Returns a DataSet object containing the result set of a stored procedure
-        /// </summary>
-        /// <param name="procName">The name of the stored procedure</param>
-        /// <param name="session">The Session object of the controller</param>
-        /// <param name="parameters">A list of parameters to pass to the stored procedure</param>
-        /// <returns>A DataSet object containing the result set of a stored procedure</returns>
-        public static DataSet GetDataSetFromStoredProcedure(string procName, HttpSessionStateBase session, List<SqlParameter> parameters = null)
-        {
-            return GetDataSetFromStoredProcedure(procName, (int)session["userID"], parameters);
-        }
-
-        /// <summary>
-        /// Returns a DataSet object containing the result set of a stored procedure
-        /// </summary>
-        /// <param name="procName">The name of the stored procedure</param>
-        /// <param name="userId">The userId of the current session</param>
-        /// <param name="parameters">A list of parameters to pass to the stored procedure</param>
-        /// <returns>A DataSet object containing the result set of a stored procedure</returns>
-        public static DataSet GetDataSetFromStoredProcedure(string procName, int userId, List<SqlParameter> parameters = null)
-        {
-            SqlConnection conn = null;
-            DataSet ds = null;
-            try
-            {
-                conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Dbkey].ToString());
-                conn.Open();
-
-                using (var cmd = new SqlCommand(procName, conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    if (parameters != null)
-                        foreach (var param in parameters)
-                            cmd.Parameters.Add(param);
-
-
-                    using (var adapter = new SqlDataAdapter(cmd))
-                    {
-                        ds = new DataSet();
-                        adapter.Fill(ds);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorHelper.Log(ex, userId);
-            }
-            finally
-            {
-                conn?.Close();
-            }
-
-            return ds;
-        }
-
-        /// <summary>
-        /// Returns the first value returned by a stored procedure
-        /// </summary>
-        /// <param name="procName">The name of the stored procedure</param>
-        /// <param name="userId">The userId of the current session</param>
-        /// <param name="parameters">A list of parameters to pass to the stored procedure</param>
-        /// <returns>The first value returned by a stored procedure</returns>
-        public static T GetScalarFromStoredProcedure<T>(string procName, int userId, List<SqlParameter> parameters = null)
-        {
-            SqlConnection conn = null;
-            T value = default(T);
-            try
-            {
-                conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Dbkey].ToString());
-                conn.Open();
-
-                using (var cmd = new SqlCommand(procName, conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    if (parameters != null)
-                        foreach (var param in parameters)
-                            cmd.Parameters.Add(param);
-
-                    value = (T)cmd.ExecuteScalar();
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorHelper.Log(ex, userId);
-            }
-            finally
-            {
-                conn?.Close();
-            }
-
-            return (T)value;
-        }
-
-        /// <summary>
-        /// Executes stored procedure directly and returns number of rows affected
-        /// </summary>
-        /// <param name="procName">Name of stored procedure</param>
-        /// <param name="session">The Session object of the controller</param>
-        /// <param name="parameters">A list of parameters to pass to the SQL</param>
-        /// <returns>Number of rows affected</returns>
-        public static int ExecuteStoredProcedure(string procName, HttpSessionStateBase session, List<SqlParameter> parameters = null)
-        {
-            return ExecuteStoredProcedure(procName, (int)session["userID"], parameters);
-        }
-
-        /// <summary>
-        /// Executes stored procedure directly and returns number of rows affected
-        /// </summary>
-        /// <param name="procName">Name of stored procedure</param>
-        /// <param name="userId">The userId of the current session</param>
-        /// <param name="parameters">A list of parameters to pass to the SQL</param>
-        /// <returns>Number of rows affected</returns>
-        public static int ExecuteStoredProcedure(string procName, int userId, List<SqlParameter> parameters = null)
-        {
-            SqlConnection conn = null;
-            var rowsAffected = 0;
-
-            try
-            {
-                conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Dbkey].ToString());
-                conn.Open();
-
-                using (var cmd = new SqlCommand(procName, conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    
-                    if (parameters != null)
-                        foreach (var param in parameters)
-                            cmd.Parameters.Add(param);
-
-                    rowsAffected = cmd.ExecuteNonQuery();
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorHelper.Log(ex, userId);
-            }
-            finally
-            {
-                conn?.Close();
-            }
-
-            return rowsAffected;
-        }
-
-        /// <summary>
-        /// Executes SQL statements directly and returns number of rows affected
-        /// </summary>
-        /// <param name="sql">SQL to execute</param>
-        /// <param name="session">The Session object of the controller</param>
-        /// <param name="parameters">A list of parameters to pass to the SQL</param>
-        /// <returns>Number of rows affected</returns>
-        public static int ExecuteNonQuery(string sql, HttpSessionStateBase session, List<SqlParameter> parameters = null)
-        {
-            return ExecuteNonQuery(sql, (int) session["userID"], parameters);
-        }
-
-        /// <summary>
-        /// Executes SQL statements directly and returns number of rows affected
-        /// </summary>
-        /// <param name="sql">SQL to execute</param>
-        /// <param name="userId">The userId of the current session</param>
-        /// <param name="parameters">A list of parameters to pass to the SQL</param>
-        /// <returns>Number of rows affected</returns>
-        public static int ExecuteNonQuery(string sql, int userId, List<SqlParameter> parameters = null)
-        {
-            SqlConnection conn = null;
-            var rowsAffected = 0;
-
-            try
-            {
-                conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Dbkey].ToString());
-                conn.Open();
-
-                using (var cmd = new SqlCommand(sql, conn))
-                {
-                    if (parameters != null)
-                        foreach (var param in parameters)
-                            cmd.Parameters.Add(param);
-
-                    rowsAffected = cmd.ExecuteNonQuery();
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorHelper.Log(ex, userId);
-            }
-            finally
-            {
-                conn?.Close();
-            }
-
-            return rowsAffected;
-        }
-        
-        /// <summary>
-        /// Asynchronously returns a DataTable object containing the result set of a stored procedure
-        /// </summary>
-        /// <param name="procName">The name of the stored procedure</param>
-        /// <param name="session">The Session object of the controller</param>
-        /// <param name="parameters">A list of parameters to pass to the stored procedure</param>
-        /// <returns>A DataTable object containing the result set of a stored procedure</returns>
-        public static async Task<DataTable> GetDataTableFromStoredProcedureAsync(string procName, HttpSessionStateBase session, List<SqlParameter> parameters = null)
-        {
-            return await GetDataTableFromStoredProcedure(procName, (int) session["userID"], parameters);
-        }
-        
-        /// <summary>
-        /// Asynchronously returns a DataTable object containing the result set of a stored procedure
-        /// </summary>
-        /// <param name="procName">The name of the stored procedure</param>
-        /// <param name="userId">The userId of the current session</param>
-        /// <param name="parameters">A list of parameters to pass to the stored procedure</param>
-        /// <returns>A DataTable object containing the result set of a stored procedure</returns>
-        public async Task<DataTable> GetDataTableFromStoredProcedureAsync(string procName, int userId, List<SqlParameter> parameters = null)
-        {
-            SqlConnection conn = null;
-            DataTable dt = null;
-
-            try 
-            {
-                conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Dbkey].ToString());
-                await conn.OpenAsync();
-
-                using (var cmd = new SqlCommand(procName, conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    if (parameters != null)
-                        foreach (var param in parameters)
-                            cmd.Parameters.Add(param);
-
                     dt = new DataTable();
-                    dt.Load(await cmd.ExecuteReaderAsync());
-                    
-                    //_GetColumns(ref dt, reader);
-                    //_GetRows(dt, reader);
+                    adapter.Fill(dt);
                 }
             }
-            catch (Exception ex) 
-            {
-                ErrorHelper.Log(ex, userId);
-            }
-            finally 
-            {
-                conn?.Close();
-            }
-
-            return dt;
         }
-        
-        /*private void _GetColumns(ref DataTable table, SqlDataReader reader)
+        finally
         {
-            try
-            {
-                if (!reader.IsClosed)
-                {
-                    var columns = new List<DataColumn>();
+            if (conn != null)
+                conn.Close();
 
-                    for (var i = 0; i < reader.FieldCount; i++)
-                        columns.Add(
-                            new DataColumn(
-                                reader.GetName(i),
-                                reader.GetFieldType(i)
-                            )
-                        );
-
-                    table.Columns.AddRange(columns.ToArray());
-                }
-            }
-            catch {}
+            this.Params.Clear();
         }
 
-        private async void _GetRows(DataTable table, SqlDataReader reader)
+        return dt;
+    }
+
+    public void ExecStoredProc(string storedProc, List<SqlParameter> sqlParameters = null)
+    {
+        SwapParameters(parameters);
+
+        GetDataTableFromStoredProc(storedProc, sqlParameters);
+    }
+
+    /// <summary>
+    /// Generic wrapper for ExecuteScalar()
+    /// </summary>
+    /// <typeparam name="T">The datatype of the scalar value</typeparam>
+    /// <param name="storedProc">Name of stored procedure</param>
+    /// <param name="sqlParameters">List of parameters to pass into stored procedure. Null by default</param>
+    /// <returns>Generic scalar value</returns>
+    public T GetScalarFromStoredProc<T>(string storedProc, List<SqlParameter> sqlParameters = null, T defaultValue = default(T))
+    {
+        object scalar = null;
+
+        SqlConnection conn = null;
+        try
         {
-            try
+            SwapParameters(parameters);
+
+            conn = new SqlConnection(connectionString);
+            conn.Open();
+
+            using (var cmd = new SqlCommand(storedProc, conn))
             {
-                if (!reader.IsClosed)
-                {
-                    while (await reader.ReadAsync())
-                    {
-                        var values = new List<object>();
+                cmd.CommandTimeout = SqlTimeout;
+                cmd.CommandType = CommandType.StoredProcedure;
 
-                        for (var i = 0; i < reader.FieldCount; i++)
-                        {
-                            var value = reader[i];
-                            values.Add(value);
-                        }
+                if (sqlParameters != null)
+                    foreach (var param in sqlParameters)
+                        cmd.Parameters.Add(param);
 
-                        table.Rows.Add(values.ToArray());
-                    }
-                }
+                scalar = cmd.ExecuteScalar();
+                if (scalar == null || scalar == DBNull.Value)
+                    scalar = defaultValue;
             }
-            catch {}
-        }*/
+        }
+        finally
+        {
+            if (conn != null)
+                conn.Close();
 
-        #endregion
+            this.Params.Clear();
+        }
+
+        return (T)scalar;
     }
 }
