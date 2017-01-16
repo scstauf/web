@@ -1,5 +1,12 @@
+/*
 
-public class Sql
+    DataHelper is my class that serves as a wrapper for the data layer.
+    I use it in Helper classes in MVC projects when I cannot use LINQ.
+    Every company I have worked for has told me not to use LINQ or EF, so this is my work around.
+
+ */
+
+public class DataHelper
 {
     private string connectionString = string.Empty;
     private List<SqlParameter> _Params;
