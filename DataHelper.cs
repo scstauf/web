@@ -12,7 +12,7 @@ public class DataHelper
     private List<SqlParameter> _Params;
     private const int SqlTimeout = 60000;
 
-    public Sql(string connectionString)
+    public DataHelper(string connectionString)
     {
         this.connectionString = connectionString;
     }
@@ -35,7 +35,9 @@ public class DataHelper
         }
     }
 
-    private void SwapParameters(List<SqlParameter> sqlParameters = null) {            
+    private void SwapParameters(ref List<SqlParameter> sqlParameters) {
+        // if the sqlParameters are null but we have parameters in this.Params
+        // use this.Params
         if (sqlParameters == null && this.Params.Count > 0)
             sqlParameters = this.Params;
     }
@@ -50,14 +52,18 @@ public class DataHelper
     /// <returns>Returns a SqlParameter</returns>
     public SqlParameter BuildParam<T>(string parameterName, SqlDbType dbType, T value)
     {
-        SqlParameter sqlParameter = new SqlParameter();
+        // build the SqlParameter
+        var sqlParameter = new SqlParameter()
+        {
+            ParameterName = parameterName,
+            SqlDbType = dbType,
+            Value = value
+        };
 
-        sqlParameter.ParameterName = parameterName;
-        sqlParameter.SqlDbType = dbType;
-        sqlParameter.Value = value;
-
+        // add to collection
         this.Params.Add(sqlParameter);
 
+        // return the newly built SqlParameter
         return sqlParameter;
     }
 
@@ -70,12 +76,14 @@ public class DataHelper
     /// <returns>Returns a SqlParameter that can contain DBNull.Value</returns>
     public SqlParameter BuildNullableParam(string parameterName, SqlDbType dbType, string value)
     {
+        // build the SqlParameter
         var sqlParameter = new SqlParameter
         {
             ParameterName = parameterName,
             SqlDbType = dbType
         };
 
+        // if the string is null, set to DBNull.Value
         if (value == null)
         {
             sqlParameter.Value = DBNull.Value;
@@ -85,8 +93,10 @@ public class DataHelper
             sqlParameter.Value = value;
         }
 
+        // add to colleciton
         this.Params.Add(sqlParameter);
 
+        // return the newly built SqlParameter
         return sqlParameter;
     }
 
@@ -102,11 +112,14 @@ public class DataHelper
     public SqlParameter BuildNullableParam<T>(string parameterName, SqlDbType dbType, T? value)
         where T: struct
     {
-        SqlParameter sqlParameter = new SqlParameter();
+        // build the SqlParameter
+        var sqlParameter = new SqlParameter()
+        {
+            ParameterName = parameterName,
+            SqlDbType = dbType
+        };
 
-        sqlParameter.ParameterName = parameterName;
-        sqlParameter.SqlDbType = dbType;
-
+        // if the nullable value has a value, use it, otherwise set to DBNull.value
         if (value.HasValue)
         {
             sqlParameter.Value = value.Value;
@@ -116,8 +129,10 @@ public class DataHelper
             sqlParameter.Value = DBNull.Value;
         }
 
+        // add to collection
         this.Params.Add(sqlParameter);
 
+        // return the newly built SqlParameter
         return sqlParameter;
     }
 
@@ -134,7 +149,7 @@ public class DataHelper
 
         try
         {
-            SwapParameters(parameters);
+            this.SwapParameters(ref sqlParameters);
 
             conn = new SqlConnection(connectionString);
             conn.Open();
@@ -144,6 +159,7 @@ public class DataHelper
                 cmd.CommandTimeout = SqlTimeout;
                 cmd.CommandType = CommandType.StoredProcedure;
 
+                // build parameters
                 if (sqlParameters != null)
                     foreach (var param in sqlParameters)
                         cmd.Parameters.Add(param);
@@ -179,7 +195,7 @@ public class DataHelper
 
         try
         {
-            SwapParameters(parameters);
+            this.SwapParameters(ref sqlParameters);
 
             conn = new SqlConnection(connectionString);
             conn.Open();
@@ -189,6 +205,7 @@ public class DataHelper
                 cmd.CommandTimeout = sqlTimeout;
                 cmd.CommandType = CommandType.StoredProcedure;
 
+                // build parameters
                 if (sqlParameters != null)
                     foreach (var param in sqlParameters)
                         cmd.Parameters.Add(param);
@@ -211,11 +228,16 @@ public class DataHelper
         return dt;
     }
 
+    /// <summary>
+    /// Executes a stored procedure without returning a result set.
+    /// </summary>
+    /// <param name="storedProc">Name of stored procedure</param>
+    /// <param name="sqlParameters">List of parameters to pass into stored procedure. Null by default</param>
     public void ExecStoredProc(string storedProc, List<SqlParameter> sqlParameters = null)
     {
-        SwapParameters(parameters);
-
-        GetDataTableFromStoredProc(storedProc, sqlParameters);
+        this.SwapParameters(ref sqlParameters);
+        // reusing GetDataTableFromStoredProc but not returning its results
+        this.GetDataTableFromStoredProc(storedProc, sqlParameters);
     }
 
     /// <summary>
@@ -232,7 +254,7 @@ public class DataHelper
         SqlConnection conn = null;
         try
         {
-            SwapParameters(parameters);
+            this.SwapParameters(ref sqlParameters);
 
             conn = new SqlConnection(connectionString);
             conn.Open();
@@ -242,11 +264,14 @@ public class DataHelper
                 cmd.CommandTimeout = SqlTimeout;
                 cmd.CommandType = CommandType.StoredProcedure;
 
+                // build parameters
                 if (sqlParameters != null)
                     foreach (var param in sqlParameters)
                         cmd.Parameters.Add(param);
 
                 scalar = cmd.ExecuteScalar();
+
+                // if no data or the data IS NULL, set to default value
                 if (scalar == null || scalar == DBNull.Value)
                     scalar = defaultValue;
             }
