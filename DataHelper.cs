@@ -1,6 +1,6 @@
 /*
 
-    DataHelper is my class that serves as a wrapper for the data layer.
+    DataHelper is my class that serves as a data access layer.
     I use it in Helper classes in MVC projects when I cannot use LINQ.
     Every company I have worked for has told me not to use LINQ or EF, so this is my work around.
 
