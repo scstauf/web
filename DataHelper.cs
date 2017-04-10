@@ -35,7 +35,7 @@ public class DataHelper
         }
     }
 
-    private void SwapParameters(List<SqlParameter> parameters = null) {            
+    private void SwapParameters(List<SqlParameter> sqlParameters = null) {            
         if (sqlParameters == null && this.Params.Count > 0)
             sqlParameters = this.Params;
     }
