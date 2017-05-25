@@ -12,11 +12,8 @@
 		<script src="http://www.youtube.com/player_api"></script>
 		<script>
 			var Videos = {
-				// flag indicating the API is ready
 				_APIReady: false,
-				// video queue
 				_videoQueue: [],
-				// which video are we currently playing?
 				_currentlyPlayingIndex: -1,
 				// YT.Player
 				player: null,
@@ -24,11 +21,9 @@
 				enqueue: function (url) {
 					// get the video id from the url
 					var videoId = url.split('?v=')[1];
-					// if there is a video id
+					// if there is a video, trim any whitespace just in case and add it to the queue
 					if (videoId) {
-						// trim any whitespace
 						videoId = videoId.trim();
-						// add the video id to the queue
 						Videos._videoQueue.push(videoId);
 					}
 				},
@@ -40,21 +35,21 @@
 						// reset to start at 0 when we increment
 						index = -1;
 					}
-					// increment to next index
+					
 					index++;
-					// set the current index
+					
 					Videos._currentlyPlayingIndex = index;
 					// return the video id for the next video
 					return Videos._videoQueue[index];
 				},
 				playNext: function () {
-					// get the next video id
+					// get the next video id and if there are no video ids, return
 					var next = Videos.next();
-					// if there are no video ids, return
+					
 					if (!next) {
 						return;
-					}					
-					// load the next video
+					}
+					
 					Videos.player.loadVideoById(next);
 				},
 				dequeue: function () {
@@ -75,7 +70,7 @@
 				Videos.player = new YT.Player('player', {
 					height: '390',
 					width: '640',
-					videoId: videoId, // passing in the video id
+					videoId: videoId,
 					events: {
 						onReady: function (e) {
 							e.target.playVideo();
@@ -107,11 +102,10 @@
 				});
 				// wait until the API is ready
 				var load = setInterval(function () {
-					// if the API is ready
+					// if the API is ready, begin the loop
 					if (Videos._APIReady) {
-						// begin the loop
 						loop(Videos.next());
-						// stop waiting
+						
 						clearInterval(load);
 						load = null;
 					}
@@ -129,8 +123,8 @@
 			<!-- 
 			youtube urls go here, separated by new lines
 			-->
-			https://www.youtube.com/watch?v=STKCRSUsyP0
-			https://www.youtube.com/watch?v=wgdBVIX9ifA
-		</div/>
+			https://www.youtube.com/watch?v=Fl-e2PM1ITM
+			https://www.youtube.com/watch?v=nkPzVoSMEUk
+		</div>
 	</body>
 </html>
