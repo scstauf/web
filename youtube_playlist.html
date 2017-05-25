@@ -1,0 +1,136 @@
+<!doctype html>
+<html>
+	<head>
+		<style type="text/css">
+			body { background-color: #000; } /* black background */
+			div#playlist { display: none; } /* hidden playlist urls */
+			/* center the player */
+			.wrapper { width: 100%; }
+			.container { width: 50%; margin: auto; }
+		</style>
+		<!-- include the YouTube JS Player API -->
+		<script src="http://www.youtube.com/player_api"></script>
+		<script>
+			var Videos = {
+				// flag indicating the API is ready
+				_APIReady: false,
+				// video queue
+				_videoQueue: [],
+				// which video are we currently playing?
+				_currentlyPlayingIndex: -1,
+				// YT.Player
+				player: null,
+				// extracts a video id from a url and enqueues it
+				enqueue: function (url) {
+					// get the video id from the url
+					var videoId = url.split('?v=')[1];
+					// if there is a video id
+					if (videoId) {
+						// trim any whitespace
+						videoId = videoId.trim();
+						// add the video id to the queue
+						Videos._videoQueue.push(videoId);
+					}
+				},
+				next: function () {
+					// get the current index
+					var index = Videos._currentlyPlayingIndex;
+					// if we are currently watching the last video in the queue
+					if (index === Videos._videoQueue.length - 1) {
+						// reset to start at 0 when we increment
+						index = -1;
+					}
+					// increment to next index
+					index++;
+					// set the current index
+					Videos._currentlyPlayingIndex = index;
+					// return the video id for the next video
+					return Videos._videoQueue[index];
+				},
+				playNext: function () {
+					// get the next video id
+					var next = Videos.next();
+					// if there are no video ids, return
+					if (!next) {
+						return;
+					}					
+					// load the next video
+					Videos.player.loadVideoById(next);
+				},
+				dequeue: function () {
+					// remove the current
+					Videos._videoQueue.splice(Videos._currentlyPlayingIndex, 1);
+					// load the next
+					Videos.playNext();
+				}
+			};
+
+			function loop(videoId) {
+				// if the video id is undefined, return
+				if (!videoId) {
+					return;
+				}
+				
+				// instantiate a new YT.Player
+				Videos.player = new YT.Player('player', {
+					height: '390',
+					width: '640',
+					videoId: videoId, // passing in the video id
+					events: {
+						onReady: function (e) {
+							e.target.playVideo();
+						},
+						onError: function (e) {
+							// if we can't watch it (DMCA, copy right, etc), remove it from the queue
+							Videos.dequeue();
+						},
+						onStateChange: function (e) {
+							// when the video ends
+							if (e.data === 0) {
+								// play the next video in the queue
+								Videos.playNext();
+							}
+						}
+					}
+				});
+			}
+			
+			function onYouTubePlayerAPIReady() {
+				// set the flag indicating the API is ready
+				Videos._APIReady = true;
+			}
+			
+			document.addEventListener('DOMContentLoaded', function () {
+				// enqueue the urls from the playlist into the queue
+				var urls = document.getElementById('playlist').innerText.split('\n').forEach(function (url) {
+					Videos.enqueue(url);
+				});
+				// wait until the API is ready
+				var load = setInterval(function () {
+					// if the API is ready
+					if (Videos._APIReady) {
+						// begin the loop
+						loop(Videos.next());
+						// stop waiting
+						clearInterval(load);
+						load = null;
+					}
+				}, 500);
+			});
+		</script>
+	</head>
+	<body>
+		<div class="wrapper">
+			<div class="container">
+				<div id="player"/>
+			</div>
+		</div>
+		<div id="playlist">
+			<!-- 
+			youtube urls go here, separated by new lines
+			-->
+			https://www.youtube.com/watch?v=STKCRSUsyP0
+			https://www.youtube.com/watch?v=wgdBVIX9ifA
+		</div/>
+	</body>
+</html>
