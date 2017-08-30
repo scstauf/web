@@ -1,19 +1,19 @@
+/*
+$.override by scottyeatscode
+
+This script adds an override() method to jQuery for
+overriding built-in jQuery methods.
+
+You can add an override by calling:
+
+    $.override('name', function () { })
+
+You can remove an override by calling:
+
+    $.removeOverride('name')
+*/
+
 (function () {
-    /*
-    *  $.override by scottyeatscode
-    *
-    *  This script adds an override() method to jQuery for
-    *  overriding built-in jQuery methods.
-    *
-    *  You can add an override by calling:
-
-            $.override('name', function () { })
-
-    *  You can remove an override by calling:
-
-            $.removeOverride('name')
-    */
-
     var override = {
         _overridden: [],
         log: function (message) {
