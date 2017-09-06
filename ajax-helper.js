@@ -27,10 +27,11 @@ var AjaxHelper = {
 
                 fullErrorMessage = 'An error occurred in Ajax request for ' + requestConfiguration.url + '.\r\nResponse was: ' + errorMessage
 
-                console.error(fullErrorMessage);
-
                 if (typeof app._errorHandler !== 'undefined') {
                     app._errorHandler(fullErrorMessage);
+                }
+                else {
+                    console.error(fullErrorMessage);
                 }
             };
         }
