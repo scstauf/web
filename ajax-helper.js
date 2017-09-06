@@ -9,21 +9,11 @@ Function.prototype.method = function (name, func) {
     return this;
 };
 
-var _App = function () {
-    this._errorHandler = null;
-    this._isjQueryLoaded = function () {
-        var jQueryLoaded = typeof jQuery !== 'undefined';
-        if (!jQueryLoaded) 
-            console.error('jQuery is not loaded');
-        return jQueryLoaded;
-    }
-
-    this._isjQueryLoaded();
-};
-
 var AjaxHelper = {
-    completeAjaxRequestConfiguration: function (requestConfiguration) {
-        if (!requestConfiguration) return;
+    completeAjaxRequestConfiguration: function (app, requestConfiguration) {
+        if (!requestConfiguration) {
+            return;
+        }
 
         if (!requestConfiguration.hasOwnProperty('error')) {
             requestConfiguration['error'] = function (xhr, status, error) {
@@ -39,30 +29,46 @@ var AjaxHelper = {
 
                 console.error(fullErrorMessage);
 
-                if (typeof this._errorHandler !== 'undefined')
-                    this._errorHandler(fullErrorMessage);
+                if (typeof app._errorHandler !== 'undefined') {
+                    app._errorHandler(fullErrorMessage);
+                }
             };
         }
-        
+
         return requestConfiguration;
     }
 };
 
-_App.method('ajax', function (requestConfiguration) {
-    if (!this._isjQueryLoaded()) return; 
-    $.ajax(AjaxHelper.completeAjaxRequestConfiguration(requestConfiguration));
-});
+var App = function () {
+    this._errorHandler = null;
+    this._isjQueryLoaded = function () {
+        var jQueryLoaded = typeof jQuery !== 'undefined';
+        if (!jQueryLoaded) {
+            console.error('jQuery is not loaded');
+        }
+        return jQueryLoaded;
+    }
 
-_App.method('post', function (requestConfiguration) {
+    this._isjQueryLoaded();
+};
+
+// prebuild the AJAX methods
+App.method('ajax', function (requestConfiguration) {
     if (!this._isjQueryLoaded()) return;
-    $.post(AjaxHelper.completeAjaxRequestConfiguration(requestConfiguration));
+    return $.ajax(AjaxHelper.completeAjaxRequestConfiguration(this, requestConfiguration));
 });
 
-_App.method('get', function (requestConfiguration) {
+App.method('post', function (requestConfiguration) {
     if (!this._isjQueryLoaded()) return;
-    $.get(AjaxHelper.completeAjaxRequestConfiguration(requestConfiguration));
+    return $.post(AjaxHelper.completeAjaxRequestConfiguration(this, requestConfiguration));
 });
 
-_App.method('setErrorHandler', function (errorHandler) {
+App.method('get', function (requestConfiguration) {
+    if (!this._isjQueryLoaded()) return;
+    return $.get(AjaxHelper.completeAjaxRequestConfiguration(this, requestConfiguration));
+});
+
+// use this to set the error handler
+App.method('setErrorHandler', function (errorHandler) {   
     this._errorHandler = errorHandler;
 });
