@@ -27,3 +27,15 @@ Date.prototype.getQuarter = function () {
     var month = new Date(this.valueOf()).getMonth() + 1;
     return Math.floor(((month - 1) / 12) / 0.25) + 1;
 };
+
+// returns boolean indicating whether string input can be parsed to a Date
+Date.isDate = function (value) {
+    var isDate = false;
+    
+    try {
+        isDate = !isNaN(new Date(value).getDate());
+    }
+    catch (err) {}
+    
+    return isDate;
+};
