@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+	<head>
+		<link type="text/css" rel="stylesheet" href="./css/style.css">
+		<script type="text/javascript" src="./js/func.js"></script>
+	</head>
+	<body>
+		<div class="container params">
+			<div class="param-container">
+				<div class="param-block">
+					<span class="top-label">Native Functions</span>
+					<select id="cbo-native"></select>
+				</div>
+				<div class="param-block">
+					<span class="top-label">Non-Native Functions</span>
+					<select id="cbo-non-native"></select>
+				</div>
+			</div>
+		</div>
+		<div class="container content">
+			<div class="content-block">
+				<span class="top-label">Peek Definition</span>
+				<textarea id="txt-def"></textarea>
+			</div>
+		</div>
+	
+		<script type="text/javascript">
+			function bindComboBox(cbo, data) {
+				var sig = '',
+					option = null;
+				
+				for (var i in data) {
+					sig = data[i];
+					
+					option = document.createElement('option');
+					option.appendChild(document.createTextNode(sig));
+					option.value = sig;
+					
+					cbo.appendChild(option);
+				}
+				
+				cbo.addEventListener('change', function (e) {
+					var def = Func.peekDefinition(cbo.value, true),
+						txt = document.getElementById('txt-def');
+					
+					txt.innerText = def;
+				});
+			}
+		
+			function loadWindowFunctions() {
+				var cboNative = document.getElementById('cbo-native'),
+					cboNonNative = document.getElementById('cbo-non-native'),
+					sigs = Func.getSignatures();
+				
+				bindComboBox(cboNative, sigs.nativeFunc);
+				bindComboBox(cboNonNative, sigs.nonNativeFunc);
+			};
+		
+			document.addEventListener('DOMContentLoaded', function () {
+				loadWindowFunctions();
+			});
+		</script>
+	</body>
+</html>
