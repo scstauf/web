@@ -16,4 +16,4 @@ goto :EOF
 :ping
 echo Pinging %1
 ping -n 1 "%1.com" > NUL
-if ERRORLEVEL 1 (set /a failed=1+failed)
+if errorlevel 1 (set /a failed=1+failed)
