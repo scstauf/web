@@ -6,6 +6,7 @@ call :ping google
 call :ping yahoo 
 call :ping facebook 
 call :ping instagram
+rem microsoft does not accept icmp requests
 rem call :ping microsoft
 
 echo.
