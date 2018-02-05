@@ -12,7 +12,7 @@ rem call :ping microsoft
 echo.
 
 echo %failed% host(s) failed.
-goto :EOF
+goto :eof
 
 :ping
 echo Pinging %1
