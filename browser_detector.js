@@ -25,6 +25,25 @@ var BrowserDetector = {
             console.error('could not determine browser from user agent');
 
         return name;
+    },
+    inUrl: function (test) {
+        return location.search.toLowerCase().indexOf(test) > -1;
+    },
+    getQueryStringValue: function (qs) {
+        var ret = '', search = qs.toLowerCase();
+
+        if (this.inUrl(search)) {
+            var tokens = location.search.split('&').map(function (i) { return i.toLowerCase(); });
+            for (var i = 0; i < tokens.length; i++) {
+                if (tokens[i].indexOf(search) > -1 && tokens[i].indexOf('=') > -1) {
+                    var value = tokens[i].split('=')[1];
+                    ret = value;
+                    break;
+                }
+            }
+        }
+
+        return ret;
     }
 };
 
