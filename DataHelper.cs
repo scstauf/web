@@ -173,9 +173,7 @@ public class DataHelper
         }
         finally
         {
-            if (conn != null)
-                conn.Close();
-
+            conn?.Close();
             this.Params.Clear();
         }
 
@@ -219,9 +217,7 @@ public class DataHelper
         }
         finally
         {
-            if (conn != null)
-                conn.Close();
-
+            conn?.Close();
             this.Params.Clear();
         }
 
@@ -278,9 +274,7 @@ public class DataHelper
         }
         finally
         {
-            if (conn != null)
-                conn.Close();
-
+            conn?.Close();
             this.Params.Clear();
         }
 
